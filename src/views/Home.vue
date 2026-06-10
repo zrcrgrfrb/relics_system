@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="home">
     <header class="site-header">
       <div class="header-inner container">
@@ -7,10 +7,10 @@
           红色文物管理系统
         </h1>
         <p class="site-subtitle">革命文物数字化保护与传承平台</p>
+        <AdminLoginEntry />
       </div>
       <div class="header-accent"></div>
     </header>
-
     <nav class="site-nav">
       <div class="nav-inner container">
         <div
@@ -113,11 +113,13 @@
 
 <script>
 import MoreLink from '@/components/MoreLink.vue'
+import AdminLoginEntry from '@/components/AdminLoginEntry.vue'
 
 export default {
   name: 'HomePage',
   components: {
-    MoreLink
+    MoreLink,
+    AdminLoginEntry
   },
   data() {
     return {

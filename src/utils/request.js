@@ -24,11 +24,11 @@ const service = axios.create({
 // ======== Request Interceptor ========
 service.interceptors.request.use(
   config => {
-    // Attach auth token here later if needed:
-    // const token = localStorage.getItem('token')
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`
-    // }
+    // Attach auth token for authenticated requests
+    const token = localStorage.getItem('relic_admin_token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
 
     if (process.env.NODE_ENV === 'development') {
       console.log(`[API] ${config.method.toUpperCase()} ${config.url}`, config.params || '')

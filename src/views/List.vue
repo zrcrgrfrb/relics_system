@@ -134,50 +134,7 @@ export default {
         { name: '其它', type: 7 }
       ],
       listData: [],
-      carouselImagesMap: {
-        1: [
-          { title: '古代印章', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=ancient%20Chinese%20seal%20stamp%20red%20ink%20historical%20relic&image_size=landscape_16_9' },
-          { title: '官印', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20official%20seal%20bronze%20ancient&image_size=landscape_16_9' },
-          { title: '玉玺', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=imperial%20jade%20seal%20Chinese%20ancient%20treasure&image_size=landscape_16_9' },
-          { title: '篆刻印章', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Chinese%20seal%20carving%20traditional%20art%20calligraphy&image_size=landscape_16_9' }
-        ],
-        2: [
-          { title: '红军军旗', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Red%20Army%20flag%20Chinese%20revolution%20historical%20banner&image_size=landscape_16_9' },
-          { title: '苏维埃徽章', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Soviet%20badge%20Chinese%20revolution%20red%20star&image_size=landscape_16_9' },
-          { title: '锦旗', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=honorary%20flag%20red%20silk%20Chinese%20traditional&image_size=landscape_16_9' },
-          { title: '证书', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=historical%20certificate%20document%20revolution%20period&image_size=landscape_16_9' }
-        ],
-        3: [
-          { title: '苏维埃货币', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Soviet%20currency%20banknote%20Chinese%20revolution&image_size=landscape_16_9' },
-          { title: '苏区纸币', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Soviet%20area%20paper%20money%20historical%20currency&image_size=landscape_16_9' },
-          { title: '银元', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=silver%20coin%20Chinese%20ancient%20currency&image_size=landscape_16_9' },
-          { title: '粮票', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=food%20coupon%20Chinese%20historical%20ration%20ticket&image_size=landscape_16_9' }
-        ],
-        4: [
-          { title: '革命邮票', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=revolutionary%20stamp%20collection%20postage%20China&image_size=landscape_16_9' },
-          { title: '纪念邮票', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=commemorative%20stamp%20historical%20event%20China&image_size=landscape_16_9' },
-          { title: '苏区邮票', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Soviet%20area%20stamp%20postal%20history&image_size=landscape_16_9' },
-          { title: '邮品', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=postal%20collection%20envelope%20stamp%20vintage&image_size=landscape_16_9' }
-        ],
-        5: [
-          { title: '陶瓷器具', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=ceramic%20vase%20Chinese%20traditional%20porcelain&image_size=landscape_16_9' },
-          { title: '生活用品', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20daily%20utensils%20wooden&image_size=landscape_16_9' },
-          { title: '家具', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Chinese%20ancient%20furniture%20wooden%20desk&image_size=landscape_16_9' },
-          { title: '纺织用品', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20Chinese%20textile%20fabric%20silk&image_size=landscape_16_9' }
-        ],
-        6: [
-          { title: '步枪', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=old%20rifle%20military%20weapon%20historical&image_size=landscape_16_9' },
-          { title: '大刀', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Chinese%20broadsword%20traditional%20weapon%20steel&image_size=landscape_16_9' },
-          { title: '军旗', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=military%20flag%20red%20army%20banner&image_size=landscape_16_9' },
-          { title: '军装', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=military%20uniform%20vintage%20revolution%20period&image_size=landscape_16_9' }
-        ],
-        7: [
-          { title: '革命文献', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=revolutionary%20document%20manuscript%20historical&image_size=landscape_16_9' },
-          { title: '历史照片', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=historical%20black%20white%20photo%20China&image_size=landscape_16_9' },
-          { title: '纪念章', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=commemorative%20medal%20badge%20honor&image_size=landscape_16_9' },
-          { title: '文物', image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=historical%20relic%20museum%20exhibition&image_size=landscape_16_9' }
-        ]
-      }
+      carouselImagesMap:{}
     }
   },
   computed: {
@@ -189,7 +146,7 @@ export default {
       return item ? item.name : '文物列表'
     },
     currentCarouselImages() {
-      return this.carouselImagesMap[this.currentType] || this.carouselImagesMap[1]
+      return this.carouselImagesMap
     },
     leftColumnData() {
       return this.listData.slice(0, Math.ceil(this.listData.length / 2))
@@ -216,7 +173,14 @@ export default {
             id: item.id,
             title: item.title,
             date: item.publishDate || '2025-10-19'
-          }))
+          }
+        ))
+        this.carouselImagesMap = res.data.map(item => ({
+          image: item.imageUrl,
+          title: item.title
+        }))
+        console.log(this.listData)
+        console.log("====="+this.carouselImagesMap)
         } else {
           this.listData = this.generateMockData()
         }

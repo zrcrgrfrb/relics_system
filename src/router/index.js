@@ -1,6 +1,21 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 
+// 解决重复跳转 NavigationDuplicated 报错
+const originalPush = VueRouter.prototype.push
+VueRouter.prototype.push = function push(location) {
+  return originalPush.call(this, location).catch(err => {
+    // 只屏蔽重复导航错误，其他异常正常抛出
+    if (err.name !== 'NavigationDuplicated') throw err
+  })
+}
+const originalReplace = VueRouter.prototype.replace
+VueRouter.prototype.replace = function replace(location) {
+  return originalReplace.call(this, location).catch(err => {
+    if (err.name !== 'NavigationDuplicated') throw err
+  })
+}
+
 Vue.use(VueRouter)
 
 const routes = [

@@ -3,7 +3,6 @@
     <header class="site-header">
       <div class="header-inner container">
         <h1 class="site-title">
-          <span class="title-icon"></span>
           红色文物管理系统
         </h1>
         <p class="site-subtitle">革命文物数字化保护与传承平台</p>

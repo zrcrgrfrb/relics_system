@@ -6,12 +6,13 @@
  */
 
 import axios from 'axios'
+import { clearAdminSession, getAdminToken } from '@/utils/auth'
 
 // ======== Configuration ========
 // Development server: http://localhost:8082
 // Production: change to your server URL (e.g. '/api' or 'https://your-domain.com/api')
 
-const API_BASE_URL = 'http://localhost:8082'
+const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8082'
 
 const service = axios.create({
   baseURL: API_BASE_URL,
@@ -22,7 +23,7 @@ const service = axios.create({
 service.interceptors.request.use(
   config => {
     // Attach auth token for authenticated requests
-    const token = localStorage.getItem('relic_admin_token')
+    const token = getAdminToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -57,6 +58,10 @@ service.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           console.error('[登录异常] 未授权，请重新登录')
+          clearAdminSession()
+          if (window.location.pathname !== '/admin/login') {
+            window.location.href = `/admin/login?redirect=${encodeURIComponent(window.location.pathname)}`
+          }
           break
         case 403:
           console.error('[权限异常] 拒绝访问，您没有该操作权限')

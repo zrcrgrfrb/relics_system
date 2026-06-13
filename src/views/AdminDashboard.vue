@@ -94,7 +94,7 @@
                 <input
                   ref="fileInput"
                   type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml"
+                  accept="image/jpeg,image/png,image/gif,image/webp,image/bmp"
                   style="display:none"
                   @change="handleImageSelect"
                 />
@@ -171,6 +171,7 @@
 import * as echarts from 'echarts'
 import { getCategories, getRelics, createRelic, uploadImage } from '@/api/relics'
 import { quillEditor } from 'vue-quill-editor'
+import { clearAdminSession } from '@/utils/auth'
 import 'quill/dist/quill.snow.css'
 
 export default {
@@ -503,8 +504,7 @@ export default {
       this.form = this.emptyForm()
     },
     logout() {
-      localStorage.removeItem('relic_admin_token')
-      localStorage.removeItem('relic_admin_user')
+      clearAdminSession()
       this.$router.replace('/admin/login')
     }
   }

@@ -1,15 +1,48 @@
 <template>
- <button class="admin-login-entry" type="button" @click="goToAdminLogin">
-    登录管理员
- </button>
+  <button v-if="shouldShowEntry" class="admin-login-entry" type="button" @click="goToAdmin">
+    {{ entryText }}
+  </button>
 </template>
 
 <script>
+import { clearAdminSession, isValidAdminToken } from '@/utils/auth'
+
 export default {
   name: 'AdminLoginEntry',
+  data() {
+    return {
+      hasAdminToken: false
+    }
+  },
+  computed: {
+    shouldShowEntry() {
+      return !this.$route.path.startsWith('/admin')
+    },
+    entryText() {
+      return this.hasAdminToken ? '进入后台' : '管理员登录'
+    }
+  },
+  mounted() {
+    this.refreshTokenState()
+  },
+  watch: {
+    '$route.path'() {
+      this.refreshTokenState()
+    }
+  },
   methods: {
-    goToAdminLogin() {
-      this.$router.push('/admin/login')
+    refreshTokenState() {
+      this.hasAdminToken = isValidAdminToken()
+    },
+    goToAdmin() {
+      this.refreshTokenState()
+      const targetPath = this.hasAdminToken ? '/admin' : '/admin/login'
+      if (!this.hasAdminToken) {
+        clearAdminSession()
+      }
+      if (this.$route.path !== targetPath) {
+        this.$router.push(targetPath)
+      }
     }
   }
 }
@@ -17,22 +50,21 @@ export default {
 
 <style scoped>
 .admin-login-entry {
-  margin-top: 18px;
-  padding: 10px 24px;
-  border: 1px solid rgba(201, 168, 106, 0.7);
-  background: linear-gradient(135deg, rgba(201, 168, 106, 0.14), rgba(139, 26, 26, 0.12));
-  color: var(--color-accent);
-  font-family: var(--font-heading);
-  font-size: 14px;
-  letter-spacing: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(240, 232, 216, 0.6);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 1px;
+  line-height: 1.6;
+  text-align: right;
   cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition: color 0.3s;
 }
 
 .admin-login-entry:hover {
-  transform: translateY(-2px);
-  background: rgba(201, 168, 106, 0.2);
-  color: #f0e8d8;
+  color: var(--color-accent);
 }
 </style>

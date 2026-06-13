@@ -2,6 +2,21 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import { clearAdminSession, isValidAdminToken } from '@/utils/auth'
 
+// ========== 新增：修复重复点击路由报错 ==========
+// 保存原始push、replace
+const originalPush = VueRouter.prototype.push
+const originalReplace = VueRouter.prototype.replace
+
+// 重写push，捕获重复跳转异常
+VueRouter.prototype.push = function push(location) {
+  return originalPush.call(this, location).catch(err => err)
+}
+// 重写replace
+VueRouter.prototype.replace = function replace(location) {
+  return originalReplace.call(this, location).catch(err => err)
+}
+// ==============================================
+
 Vue.use(VueRouter)
 
 const routes = [

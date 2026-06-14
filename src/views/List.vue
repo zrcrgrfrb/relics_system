@@ -3,11 +3,10 @@
     <header class="site-header">
       <div class="header-inner container">
         <h1 class="site-title">
-          <span class="title-icon"></span>
+          
           红色文物管理系统
         </h1>
         <p class="site-subtitle">革命文物数字化保护与传承平台</p>
-        <AdminLoginEntry />
       </div>
       <div class="header-accent"></div>
     </header>
@@ -83,44 +82,18 @@
       </aside>
     </main>
 
-    <footer class="site-footer">
-      <div class="footer-accent"></div>
-      <div class="footer-inner container">
-        <div class="footer-cols">
-          <div class="footer-col footer-brand">
-            <div class="footer-logo">
-              <div class="logo-mark">红</div>
-              <span class="footer-title">红色文物管理系统</span>
-            </div>
-          </div>
-          <div class="footer-col footer-info">
-            <p>&copy; 版权所有 2024 "江西"数字思政创新研究中心</p>
-            <p>邮编：341000 联系电话：0797-8393666</p>
-            <p>赣ICP备2022028116号-1</p>
-            <p>地址：江西省赣州市章贡区师大南路赣南师范大学人文科技中心二楼江西数字思政创新研究中心</p>
-          </div>
-          <div class="footer-col footer-links">
-            <a href="#" class="footer-link">关于我们</a>
-            <a href="#" class="footer-link">意见反馈</a>
-            <a href="#" class="footer-link">平台声明</a>
-            <a href="#" class="footer-link">制作团队</a>
-          </div>
-        </div>
-      </div>
-    </footer>
+   
   </div>
 </template>
 
 <script>
 import request from '@/utils/request'
 import MoreLink from '@/components/MoreLink.vue'
-import AdminLoginEntry from '@/components/AdminLoginEntry.vue'
 
 export default {
   name: 'RelicList',
   components: {
-    MoreLink,
-    AdminLoginEntry
+    MoreLink
   },
   data() {
     return {
@@ -146,6 +119,7 @@ export default {
       return item ? item.name : '文物列表'
     },
     currentCarouselImages() {
+      return this.carouselImagesMap
       return this.carouselImagesMap
     },
     leftColumnData() {

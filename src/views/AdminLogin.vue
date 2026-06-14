@@ -31,7 +31,7 @@
           />
           <button class="login-button" type="submit">登录管理员</button>
         </el-form>
-        <p class="login-tip">演示账号：admin / admin123</p>
+        <p class="login-tip">请使用管理员账号登录</p>
         <button class="back-home" type="button" @click="$router.push('/')">返回前台首页</button>
       </section>
     </main>
@@ -40,6 +40,7 @@
 
 <script>
 import { adminLogin } from '@/api/relics'
+import { setAdminSession } from '@/utils/auth'
 
 export default {
   name: 'AdminLogin',
@@ -47,7 +48,7 @@ export default {
     return {
       loginError: '',
       loginForm: {
-        username: 'admin',
+        username: '',
         password: ''
       },
       rules: {
@@ -63,8 +64,7 @@ export default {
 
         try {
           const res = await adminLogin(this.loginForm)
-          localStorage.setItem('relic_admin_token', res.data.token)
-          localStorage.setItem('relic_admin_user', res.data.username)
+          setAdminSession(res.data.token, res.data.username)
           this.$message.success('\u767b\u5f55\u6210\u529f\uff0c\u6b63\u5728\u8fdb\u5165\u540e\u53f0')
           this.$router.replace(this.$route.query.redirect || '/admin')
         } catch (error) {

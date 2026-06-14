@@ -1,12 +1,43 @@
 ﻿<template>
   <div id="app">
     <router-view />
+     <footer class="site-footer">
+      <div class="footer-accent"></div>
+      <div class="footer-inner container">
+        <div class="footer-cols">
+          <div class="footer-col footer-brand">
+            <div class="footer-logo">
+              <div class="logo-mark">红</div>
+              <span class="footer-title">红色文物管理系统</span>
+            </div>
+          </div>
+          <div class="footer-col footer-info">
+            <p>&copy; 版权所有 2024 "鸿源"数字思政创新研究中心</p>
+            <p>邮编：341000 联系电话：0797-8393666</p>
+            <p>赣ICP备XXXXXXX</p>
+            <p>地址：江西省赣州市章贡区师大南路赣南师范大学人文科技中心二楼江西数字思政创新研究中心</p>
+          </div>
+          <div class="footer-col footer-links">
+            <router-link to="/about" class="footer-link">关于我们</router-link>
+            <router-link to="/feedback" class="footer-link">意见反馈</router-link>
+            <router-link to="/statement" class="footer-link">平台声明</router-link>
+            <router-link to="/team" class="footer-link">制作团队</router-link>
+            <AdminLoginEntry />
+          </div>
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
 <script>
+import AdminLoginEntry from '@/components/AdminLoginEntry.vue'
+
 export default {
-  name: 'App'
+  name: 'App',
+  components: {
+    AdminLoginEntry
+  }
 }
 </script>
 
@@ -114,5 +145,88 @@ body {
 
 .el-pagination.is-background .el-pager li:not(.disabled):hover {
   color: var(--color-primary) !important;
+}
+.site-footer {
+  background: var(--color-footer-bg);
+  color: rgba(240, 232, 216, 0.7);
+}
+
+.footer-accent {
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+  opacity: 0.3;
+}
+
+.footer-inner {
+  padding: 40px 24px;
+}
+
+.footer-cols {
+  display: flex;
+  gap: 60px;
+  align-items: flex-start;
+}
+
+.footer-brand {
+  flex: 0 0 auto;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo-mark {
+  width: 52px;
+  height: 52px;
+  border: 2px solid var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-accent);
+  opacity: 0.8;
+}
+
+.footer-title {
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: 500;
+  color: rgba(240, 232, 216, 0.85);
+}
+
+.footer-info {
+  flex: 2;
+}
+
+.footer-info p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 3px 0;
+  opacity: 0.7;
+}
+
+.footer-links {
+  flex: 1;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-link {
+  color: rgba(240, 232, 216, 0.6);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 300;
+  transition: color 0.3s;
+  letter-spacing: 1px;
+}
+
+.footer-link:hover {
+  color: var(--color-accent);
 }
 </style>

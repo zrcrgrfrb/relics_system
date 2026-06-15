@@ -152,7 +152,7 @@ export default {
           }))
           this.carouselImagesMap=res.data.map(item=>(
             {
-              image:item.imageUrl,
+              image: item.imageUrl,
               title:item.title
             }
           ))

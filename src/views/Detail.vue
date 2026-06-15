@@ -43,9 +43,7 @@
 
           <div class="detail-divider"></div>
 
-          <div class="detail-text">
-            <p>{{ detailData.content }}</p>
-          </div>
+          <div class="detail-text rich-content" v-html="safeContent"></div>
 
           <div class="detail-info">
             <div class="info-item">
@@ -102,6 +100,11 @@ export default {
   mounted() {
     this.fetchDetail()
   },
+  computed: {
+    safeContent() {
+      return this.sanitizeRichText(this.detailData && this.detailData.content)
+    }
+  },
   methods: {
     async fetchDetail() {
       try {
@@ -130,6 +133,41 @@ export default {
     getCategoryName(categoryId) {
       const item = this.navItems.find(i => i.type === categoryId)
       return item ? item.name : '未知分类'
+    },
+    sanitizeRichText(content) {
+      const raw = String(content || '').trim()
+      if (!raw) {
+        return '<p>暂无正文内容</p>'
+      }
+
+      const hasHtml = /<\/?[a-z][\s\S]*>/i.test(raw)
+      const html = hasHtml ? raw : `<p>${this.escapeHtml(raw).replace(/\n/g, '<br>')}</p>`
+      const template = document.createElement('template')
+      template.innerHTML = html
+
+      template.content.querySelectorAll('script, style, iframe, object, embed, link, meta').forEach(node => {
+        node.remove()
+      })
+
+      template.content.querySelectorAll('*').forEach(node => {
+        Array.from(node.attributes).forEach(attribute => {
+          const name = attribute.name.toLowerCase()
+          const value = attribute.value || ''
+          if (name.startsWith('on') || /javascript:/i.test(value)) {
+            node.removeAttribute(attribute.name)
+          }
+        })
+      })
+
+      return template.innerHTML
+    },
+    escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
     },
     generateMockDetail() {
       return {
@@ -346,10 +384,69 @@ export default {
   font-family: var(--font-body);
   font-size: 15px;
   margin-bottom: 32px;
+  overflow-wrap: anywhere;
 }
 
-.detail-text p {
+.rich-content >>> p {
   text-indent: 2em;
+  margin: 0 0 14px;
+}
+
+.rich-content >>> p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-content >>> strong,
+.rich-content >>> b {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.rich-content >>> em,
+.rich-content >>> i {
+  color: var(--color-text-secondary);
+}
+
+.rich-content >>> img {
+  display: block;
+  height: auto;
+  margin: 18px auto;
+  max-width: 100%;
+}
+
+.rich-content >>> ul,
+.rich-content >>> ol {
+  margin: 12px 0 16px 2em;
+  padding: 0;
+}
+
+.rich-content >>> li {
+  margin: 6px 0;
+}
+
+.rich-content >>> a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.rich-content >>> a:hover {
+  text-decoration: underline;
+}
+
+.rich-content >>> h1,
+.rich-content >>> h2,
+.rich-content >>> h3 {
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  line-height: 1.5;
+  margin: 18px 0 10px;
+}
+
+.rich-content >>> blockquote {
+  border-left: 3px solid var(--color-accent);
+  color: var(--color-text-secondary);
+  margin: 16px 0;
+  padding: 8px 0 8px 16px;
 }
 
 .detail-info {

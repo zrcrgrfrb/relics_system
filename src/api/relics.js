@@ -16,6 +16,14 @@ export function searchRelics(params) {
   return request.get('/api/relics/search', { params })
 }
 
+export function imageSearchRelics(file, limit = 10) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post('/api/relics/image-search', formData, {
+    params: { limit }
+  })
+}
+
 export function getRelicDetail(id) {
   return request.get(`/api/relics/${id}`)
 }

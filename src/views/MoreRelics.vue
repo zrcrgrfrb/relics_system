@@ -19,7 +19,7 @@
           v-for="item in navItems"
           :key="item.type"
           class="nav-item"
-          :class="{ active: !isSearchMode && currentType === item.type }"
+          :class="{ active: !isLookupMode && currentType === item.type }"
           @click="handleNavClick(item.type)"
         >
           {{ item.name }}
@@ -74,9 +74,14 @@
             >{{ part.text }}</span>
           </template>
         </el-table-column>
+        <el-table-column v-if="isImageSearchMode" label="相似度" width="120" align="center">
+          <template slot-scope="scope">
+            <span class="similarity-badge">{{ formatSimilarity(scope.row.similarity) }}</span>
+          </template>
+        </el-table-column>
       </el-table>
 
-      <div class="pagination-wrap">
+      <div v-if="!isImageSearchMode" class="pagination-wrap">
         <el-pagination
           background
           layout="prev, pager, next, jumper, total"
@@ -123,6 +128,12 @@ export default {
     isSearchMode() {
       return this.$route.params.type === 'search'
     },
+    isImageSearchMode() {
+      return this.$route.params.type === 'image-search'
+    },
+    isLookupMode() {
+      return this.isSearchMode || this.isImageSearchMode
+    },
     searchKeyword() {
       return (this.$route.query.keyword || '').trim()
     },
@@ -134,9 +145,15 @@ export default {
       return item ? item.name : '文物列表'
     },
     pageTitle() {
+      if (this.isImageSearchMode) {
+        return '图像检索结果'
+      }
       return this.isSearchMode ? '搜索结果' : this.currentTypeName
     },
     pageSummary() {
+      if (this.isImageSearchMode) {
+        return `按图片特征匹配到 ${this.total} 件相似文物`
+      }
       if (this.isSearchMode) {
         return this.searchKeyword
           ? `“${this.searchKeyword}” 共匹配 ${this.total} 件文物`
@@ -162,6 +179,11 @@ export default {
     async fetchRelics() {
       this.loading = true
       try {
+        if (this.isImageSearchMode) {
+          this.loadImageSearchResults()
+          return
+        }
+
         if (this.isSearchMode && !this.searchKeyword) {
           this.relics = []
           this.total = 0
@@ -182,7 +204,8 @@ export default {
             id: item.id,
             title: item.title,
             date: item.publishDate || item.date || '',
-            image: item.imageUrl || item.image || ''
+            image: item.imageUrl || item.image || '',
+            similarity: item.similarity
           }))
           this.total = data.total || 0
           return
@@ -205,6 +228,31 @@ export default {
       const start = (this.page - 1) * this.pageSize
       this.relics = all.slice(start, start + this.pageSize)
       this.total = all.length
+    },
+    loadImageSearchResults() {
+      const raw = sessionStorage.getItem('imageSearchResults')
+      if (!raw) {
+        this.relics = []
+        this.total = 0
+        return
+      }
+
+      try {
+        const data = JSON.parse(raw)
+        const list = data.list || []
+        this.relics = list.map(item => ({
+          id: item.id,
+          title: item.title,
+          date: item.publishDate || item.date || '',
+          image: item.imageUrl || item.image || '',
+          similarity: item.similarity
+        }))
+        this.total = data.total || list.length
+      } catch (error) {
+        console.error('Failed to parse image search results:', error)
+        this.relics = []
+        this.total = 0
+      }
     },
     handlePageChange(page) {
       this.page = page
@@ -249,6 +297,12 @@ export default {
         parts.push({ text: text.slice(start), match: false })
       }
       return parts.length ? parts : [{ text, match: false }]
+    },
+    formatSimilarity(value) {
+      if (typeof value !== 'number') {
+        return '-'
+      }
+      return `${Math.round(value * 100)}%`
     }
   }
 }
@@ -447,6 +501,18 @@ export default {
   box-shadow: inset 0 -1px 0 rgba(201, 168, 106, 0.55);
   color: var(--color-primary);
   padding: 0 2px;
+}
+
+.similarity-badge {
+  background: rgba(139, 26, 26, 0.08);
+  border: 1px solid rgba(139, 26, 26, 0.16);
+  color: var(--color-primary);
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 54px;
+  padding: 3px 8px;
 }
 
 .pagination-wrap {

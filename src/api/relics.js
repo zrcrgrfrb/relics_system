@@ -40,6 +40,10 @@ export function deleteRelic(id) {
   return request.delete(`/api/relics/${id}`)
 }
 
+export function batchDeleteRelics(ids) {
+  return request.delete('/api/relics/batch', { data: ids })
+}
+
 export function adminLogin(data) {
   return request.post('/api/admin/login', data)
 }

@@ -152,24 +152,99 @@
         <article class="panel records-panel">
           <div class="panel-heading records-heading">
             <div><span>Latest Records</span><h2>数据记录</h2></div>
-            <el-input v-model="keyword" placeholder="搜索标题、地点、年代" prefix-icon="el-icon-search" class="search-input" />
+            <div class="records-tools">
+              <el-button
+                type="danger"
+                icon="el-icon-delete"
+                :disabled="!selectedRows.length"
+                :loading="submitting"
+                @click="deleteSelectedRelics"
+              >
+                批量删除
+              </el-button>
+              <el-input v-model="keyword" placeholder="搜索标题、地点、年代" prefix-icon="el-icon-search" class="search-input" />
+            </div>
           </div>
-          <el-table v-loading="loading" :data="filteredRelics" stripe empty-text="暂无数据">
+          <el-table
+            ref="recordsTable"
+            v-loading="loading"
+            :data="filteredRelics"
+            row-key="id"
+            stripe
+            empty-text="暂无数据"
+            @selection-change="handleSelectionChange"
+          >
+            <el-table-column type="selection" width="48" reserve-selection />
             <el-table-column prop="title" label="标题" min-width="220" />
             <el-table-column label="分类" width="120"><template slot-scope="scope">{{ categoryName(scope.row.categoryId) }}</template></el-table-column>
             <el-table-column prop="period" label="年代" width="150" />
             <el-table-column prop="location" label="收藏地" min-width="180" />
             <el-table-column prop="publishDate" label="发布日期" width="140" />
+            <el-table-column label="操作" width="170" fixed="right">
+              <template slot-scope="scope">
+                <el-button type="text" icon="el-icon-edit" @click="openEditDialog(scope.row)">修改</el-button>
+                <el-button type="text" class="danger-link" icon="el-icon-delete" @click="deleteSingleRelic(scope.row)">删除</el-button>
+              </template>
+            </el-table-column>
           </el-table>
         </article>
       </section>
     </main>
+    <el-dialog
+      title="修改文物数据"
+      :visible.sync="editDialogVisible"
+      width="760px"
+      custom-class="edit-relic-dialog"
+      :close-on-click-modal="false"
+      @closed="resetEditForm"
+    >
+      <el-form :model="editForm" label-position="top" class="relic-form edit-form">
+        <el-row :gutter="18">
+          <el-col :span="12"><el-form-item label="文物标题"><el-input v-model="editForm.title" placeholder="请输入文物标题" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="所属分类"><el-select v-model="editForm.categoryId" placeholder="选择分类" class="full-width"><el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item></el-col>
+        </el-row>
+        <el-row :gutter="18">
+          <el-col :span="12">
+            <el-form-item label="图片">
+              <div class="image-upload-row">
+                <el-upload
+                  action=""
+                  :show-file-list="false"
+                  :http-request="uploadEditImage"
+                  accept="image/jpeg,image/png,image/gif,image/webp,image/bmp"
+                >
+                  <el-button size="small" :loading="editImageUploading">选择图片</el-button>
+                </el-upload>
+              </div>
+              <img v-if="editForm.imageUrl" :src="editForm.imageUrl" class="image-preview" alt="图片预览" />
+              <el-input v-model="editForm.imageUrl" placeholder="或手动输入图片 URL" class="url-fallback" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12"><el-form-item label="发布日期"><el-date-picker v-model="editForm.publishDate" value-format="yyyy-MM-dd" type="date" placeholder="选择日期" class="full-width" /></el-form-item></el-col>
+        </el-row>
+        <el-row :gutter="18">
+          <el-col :span="12"><el-form-item label="年代"><el-input v-model="editForm.period" placeholder="如：土地革命时期" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="收藏地"><el-input v-model="editForm.location" placeholder="馆藏或陈列地点" /></el-form-item></el-col>
+        </el-row>
+        <el-form-item label="文物说明">
+          <quill-editor
+            v-model="editForm.content"
+            :options="quillOptions"
+            class="quill-editor-custom"
+          />
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="editSubmitting" @click="submitEditRelic">保存修改</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import * as echarts from 'echarts'
-import { getCategories, getRelics, createRelic, uploadImage } from '@/api/relics'
+import { getCategories, getRelics, getRelicDetail, createRelic, updateRelic, deleteRelic, batchDeleteRelics, uploadImage } from '@/api/relics'
 import { quillEditor } from 'vue-quill-editor'
 import { clearAdminSession } from '@/utils/auth'
 import 'quill/dist/quill.snow.css'
@@ -186,6 +261,10 @@ export default {
       selectedFile: null,
       uploading: false,
       uploadError: '',
+      selectedRows: [],
+      editDialogVisible: false,
+      editSubmitting: false,
+      editImageUploading: false,
       apiStatus: '\u68c0\u6d4b\u4e2d',
       statusText: '\u6b63\u5728\u8fde\u63a5\u540e\u7aef\u670d\u52a1',
       keyword: '',
@@ -200,6 +279,7 @@ export default {
       ],
       relics: [],
       form: this.emptyForm(),
+      editForm: this.emptyForm(),
       quillOptions: {
         theme: 'snow',
         placeholder: '\u8bf7\u8f93\u5165\u6587\u7269\u4ecb\u7ecd\u4e0e\u53f2\u6599\u8bf4\u660e',
@@ -409,7 +489,18 @@ export default {
       }
     },
     normalizeRelic(item) {
-      return { id: item.id, title: item.title, categoryId: item.categoryId || item.type || 1, content: item.content, imageUrl: item.imageUrl || item.image, period: item.period, location: item.location, publishDate: item.publishDate || item.date }
+      return { id: item.id, title: item.title || '', categoryId: item.categoryId || item.type || 1, content: item.content || '', imageUrl: item.imageUrl || item.image || '', period: item.period || '', location: item.location || '', publishDate: item.publishDate || item.date || '' }
+    },
+    formPayload(source) {
+      return {
+        title: (source.title || '').trim(),
+        categoryId: Number(source.categoryId || 1),
+        content: source.content || '',
+        imageUrl: source.imageUrl || '',
+        period: source.period || '',
+        location: source.location || '',
+        publishDate: source.publishDate || ''
+      }
     },
     categoryName(id) {
       const category = this.categories.find(item => item.id === id)
@@ -430,6 +521,100 @@ export default {
         }
       } catch (error) {
         this.$message.error('\u63d0\u4ea4\u5931\u8d25\uff0c\u8bf7\u68c0\u67e5\u540e\u7aef\u670d\u52a1')
+      } finally {
+        this.submitting = false
+      }
+    },
+    handleSelectionChange(rows) {
+      this.selectedRows = rows
+    },
+    async openEditDialog(row) {
+      let relic = row
+      if (row.content === undefined || row.imageUrl === undefined) {
+        try {
+          const res = await getRelicDetail(row.id)
+          if (res.success) relic = res.data
+        } catch (error) {
+          this.$message.warning('\u672a\u80fd\u8bfb\u53d6\u5b8c\u6574\u8be6\u60c5\uff0c\u5df2\u4f7f\u7528\u5217\u8868\u6570\u636e')
+        }
+      }
+      this.editForm = this.normalizeRelic(relic)
+      this.editDialogVisible = true
+    },
+    async submitEditRelic() {
+      if (!this.editForm.id) return
+      if (!this.editForm.title.trim()) {
+        this.$message.warning('\u8bf7\u5148\u586b\u5199\u6587\u7269\u6807\u9898')
+        return
+      }
+      this.editSubmitting = true
+      try {
+        const res = await updateRelic(this.editForm.id, this.formPayload(this.editForm))
+        if (res.success) {
+          this.$message.success('\u6570\u636e\u5df2\u4fee\u6539')
+          this.editDialogVisible = false
+          await this.fetchRelics()
+        }
+      } catch (error) {
+        this.$message.error('\u4fee\u6539\u5931\u8d25\uff0c\u8bf7\u68c0\u67e5\u540e\u7aef\u670d\u52a1')
+      } finally {
+        this.editSubmitting = false
+      }
+    },
+    async uploadEditImage(option) {
+      this.editImageUploading = true
+      try {
+        const res = await uploadImage(option.file)
+        if (res.success) {
+          this.editForm.imageUrl = res.data
+          this.$message.success('\u56fe\u7247\u5df2\u4e0a\u4f20')
+        } else {
+          this.$message.error(res.message || '\u4e0a\u4f20\u5931\u8d25')
+        }
+      } catch (error) {
+        this.$message.error('\u56fe\u7247\u4e0a\u4f20\u5931\u8d25')
+      } finally {
+        this.editImageUploading = false
+      }
+    },
+    async deleteSingleRelic(row) {
+      try {
+        await this.$confirm(`确定删除“${row.title}”吗？`, '删除确认', {
+          confirmButtonText: '\u5220\u9664',
+          cancelButtonText: '\u53d6\u6d88',
+          type: 'warning'
+        })
+        this.submitting = true
+        const res = await deleteRelic(row.id)
+        if (res.success) {
+          this.$message.success('\u6570\u636e\u5df2\u5220\u9664')
+          await this.fetchRelics()
+        }
+      } catch (error) {
+        if (error !== 'cancel' && error !== 'close') this.$message.error('\u5220\u9664\u5931\u8d25')
+      } finally {
+        this.submitting = false
+      }
+    },
+    async deleteSelectedRelics() {
+      const ids = this.selectedRows.map(item => item.id)
+      if (!ids.length) return
+      try {
+        await this.$confirm(`确定删除已选的 ${ids.length} 条数据吗？`, '批量删除确认', {
+          confirmButtonText: '\u6279\u91cf\u5220\u9664',
+          cancelButtonText: '\u53d6\u6d88',
+          type: 'warning'
+        })
+        this.submitting = true
+        const res = await batchDeleteRelics(ids)
+        if (res.success) {
+          this.$message.success('\u5df2\u6279\u91cf\u5220\u9664')
+          this.selectedRows = []
+          if (this.$refs.recordsTable) this.$refs.recordsTable.clearSelection()
+          await this.fetchRelics()
+        }
+      } catch (error) {
+        if (error !== 'cancel' && error !== 'close') this.$message.error('\u6279\u91cf\u5220\u9664\u5931\u8d25')
       } finally {
         this.submitting = false
       }
@@ -503,6 +688,11 @@ export default {
     resetForm() {
       this.form = this.emptyForm()
     },
+    resetEditForm() {
+      this.editForm = this.emptyForm()
+      this.editSubmitting = false
+      this.editImageUploading = false
+    },
     logout() {
       clearAdminSession()
       this.$router.replace('/admin/login')
@@ -563,10 +753,15 @@ export default {
 .submit-button { width: 100%; height: 46px; border: 0; background: var(--color-primary); color: #fff7e8; font-family: var(--font-heading); letter-spacing: 3px; cursor: pointer; }
 .submit-button:disabled { opacity: 0.64; cursor: not-allowed; }
 .records-panel .records-heading { align-items: center; }
+.records-tools { display: flex; align-items: center; gap: 12px; }
 .search-input { max-width: 320px; }
+.danger-link { color: #a11818; }
+.danger-link:hover { color: #c23a3a; }
+.edit-relic-dialog .el-dialog__body { padding-top: 8px; }
+.edit-form { max-height: 62vh; overflow-y: auto; padding-right: 4px; }
 .quill-editor-custom .ql-editor { min-height: 180px; font-size: 15px; line-height: 1.8; }
 .quill-editor-custom .ql-toolbar { border-color: var(--color-border); }
 .quill-editor-custom .ql-container { border-color: var(--color-border); }
 @media (max-width: 1180px) { .admin-dashboard { grid-template-columns: 1fr; } .admin-sidebar { position: static; height: auto; } .metric-grid, .chart-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 760px) { .admin-main { padding: 22px; } .admin-topbar, .panel-heading, .topbar-actions { flex-direction: column; } .metric-grid, .chart-grid { grid-template-columns: 1fr; } .panel.large { grid-column: span 1; } }
+@media (max-width: 760px) { .admin-main { padding: 22px; } .admin-topbar, .panel-heading, .topbar-actions, .records-tools { flex-direction: column; align-items: stretch; } .metric-grid, .chart-grid { grid-template-columns: 1fr; } .panel.large { grid-column: span 1; } }
 </style>

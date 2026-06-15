@@ -1,6 +1,7 @@
 <template>
   <div class="more-page">
     <header class="site-header">
+      <HeaderSearch />
       <div class="header-inner container">
         <h1 class="site-title">
           
@@ -18,7 +19,7 @@
           v-for="item in navItems"
           :key="item.type"
           class="nav-item"
-          :class="{ active: currentType === item.type }"
+          :class="{ active: !isSearchMode && currentType === item.type }"
           @click="handleNavClick(item.type)"
         >
           {{ item.name }}
@@ -29,8 +30,8 @@
     <main class="more-container">
       <div class="page-heading">
         <div>
-          <h2>{{ currentTypeName }}</h2>
-          <p>共 {{ total }} 件文物</p>
+          <h2>{{ pageTitle }}</h2>
+          <p>{{ pageSummary }}</p>
         </div>
         <button class="back-button" type="button" @click="goBack">返回</button>
       </div>
@@ -41,6 +42,7 @@
         border
         class="relic-table"
         empty-text="暂无数据"
+        @row-click="handleRowClick"
       >
         <el-table-column label="图片" width="180" align="center">
           <template slot-scope="scope">
@@ -48,18 +50,30 @@
               class="relic-image"
               :src="scope.row.image"
               :alt="scope.row.title"
-              @click="goToDetail(scope.row.id)"
+              @click.stop="goToDetail(scope.row.id)"
             />
           </template>
         </el-table-column>
         <el-table-column label="标题" min-width="260">
           <template slot-scope="scope">
-            <button class="title-button" type="button" @click="goToDetail(scope.row.id)">
-              {{ scope.row.title }}
+            <button class="title-button" type="button" @click.stop="goToDetail(scope.row.id)">
+              <span
+                v-for="(part, index) in highlightParts(scope.row.title)"
+                :key="`title-${scope.row.id}-${index}`"
+                :class="{ 'search-highlight': part.match }"
+              >{{ part.text }}</span>
             </button>
           </template>
         </el-table-column>
-        <el-table-column prop="date" label="发布日期" width="160" align="center" />
+        <el-table-column prop="date" label="发布日期" width="160" align="center">
+          <template slot-scope="scope">
+            <span
+              v-for="(part, index) in highlightParts(scope.row.date)"
+              :key="`date-${scope.row.id}-${index}`"
+              :class="{ 'search-highlight': part.match }"
+            >{{ part.text }}</span>
+          </template>
+        </el-table-column>
       </el-table>
 
       <div class="pagination-wrap">
@@ -79,10 +93,14 @@
 </template>
 
 <script>
-import request from '@/utils/request'
+import HeaderSearch from '@/components/HeaderSearch.vue'
+import { getRelicsPage, searchRelics } from '@/api/relics'
 
 export default {
   name: 'MoreRelics',
+  components: {
+    HeaderSearch
+  },
   data() {
     return {
       navItems: [
@@ -102,12 +120,29 @@ export default {
     }
   },
   computed: {
+    isSearchMode() {
+      return this.$route.params.type === 'search'
+    },
+    searchKeyword() {
+      return (this.$route.query.keyword || '').trim()
+    },
     currentType() {
       return parseInt(this.$route.params.type, 10) || 1
     },
     currentTypeName() {
       const item = this.navItems.find(i => i.type === this.currentType)
       return item ? item.name : '文物列表'
+    },
+    pageTitle() {
+      return this.isSearchMode ? '搜索结果' : this.currentTypeName
+    },
+    pageSummary() {
+      if (this.isSearchMode) {
+        return this.searchKeyword
+          ? `“${this.searchKeyword}” 共匹配 ${this.total} 件文物`
+          : '请输入标题或发布日期进行搜索'
+      }
+      return `共 ${this.total} 件文物`
     }
   },
   mounted() {
@@ -117,19 +152,30 @@ export default {
     '$route.params.type'() {
       this.page = 1
       this.fetchRelics()
+    },
+    '$route.query.keyword'() {
+      this.page = 1
+      this.fetchRelics()
     }
   },
   methods: {
     async fetchRelics() {
       this.loading = true
       try {
-        const res = await request.get('/api/relics/page', {
-          params: {
-            type: this.currentType,
-            page: this.page,
-            pageSize: this.pageSize
-          }
-        })
+        if (this.isSearchMode && !this.searchKeyword) {
+          this.relics = []
+          this.total = 0
+          return
+        }
+
+        const params = {
+          page: this.page,
+          pageSize: this.pageSize
+        }
+        const res = this.isSearchMode
+          ? await searchRelics({ ...params, keyword: this.searchKeyword })
+          : await getRelicsPage({ ...params, type: this.currentType })
+
         if (res.success) {
           const data = res.data || {}
           this.relics = (data.list || []).map(item => ({
@@ -152,7 +198,7 @@ export default {
     useMockData() {
       const all = Array.from({ length: 23 }).map((_, index) => ({
         id: `${this.currentType}-${index + 1}`,
-        title: `${this.currentTypeName}文物 ${index + 1}`,
+        title: `${this.isSearchMode ? '搜索结果' : this.currentTypeName}文物 ${index + 1}`,
         date: '2025-10-19',
         image: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Chinese%20red%20revolutionary%20relic%20museum%20object%20${this.currentType}%20${index + 1}&image_size=square`
       }))
@@ -167,11 +213,42 @@ export default {
     handleNavClick(type) {
       this.$router.push(`/more/${type}`)
     },
+    handleRowClick(row) {
+      this.goToDetail(row.id)
+    },
     goToDetail(id) {
       this.$router.push(`/detail/${id}`)
     },
     goBack() {
       this.$router.back()
+    },
+    highlightParts(value) {
+      const text = String(value || '')
+      const keyword = this.isSearchMode ? this.searchKeyword : ''
+      if (!keyword) {
+        return [{ text, match: false }]
+      }
+
+      const lowerText = text.toLowerCase()
+      const lowerKeyword = keyword.toLowerCase()
+      const parts = []
+      let start = 0
+      let index = lowerText.indexOf(lowerKeyword)
+
+      while (index !== -1) {
+        if (index > start) {
+          parts.push({ text: text.slice(start, index), match: false })
+        }
+        const end = index + keyword.length
+        parts.push({ text: text.slice(index, end), match: true })
+        start = end
+        index = lowerText.indexOf(lowerKeyword, start)
+      }
+
+      if (start < text.length) {
+        parts.push({ text: text.slice(start), match: false })
+      }
+      return parts.length ? parts : [{ text, match: false }]
     }
   }
 }
@@ -331,6 +408,10 @@ export default {
   border-color: var(--color-border-light) !important;
 }
 
+.relic-table >>> .el-table__row {
+  cursor: pointer;
+}
+
 .relic-image {
   border: 1px solid var(--color-border-light);
   cursor: pointer;
@@ -359,6 +440,13 @@ export default {
 
 .title-button:hover {
   color: var(--color-primary);
+}
+
+.search-highlight {
+  background: rgba(201, 168, 106, 0.22);
+  box-shadow: inset 0 -1px 0 rgba(201, 168, 106, 0.55);
+  color: var(--color-primary);
+  padding: 0 2px;
 }
 
 .pagination-wrap {

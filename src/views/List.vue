@@ -1,6 +1,7 @@
 <template>
   <div class="list-page">
     <header class="site-header">
+      <HeaderSearch />
       <div class="header-inner container">
         <h1 class="site-title">
           
@@ -89,11 +90,13 @@
 <script>
 import request from '@/utils/request'
 import MoreLink from '@/components/MoreLink.vue'
+import HeaderSearch from '@/components/HeaderSearch.vue'
 
 export default {
   name: 'RelicList',
   components: {
-    MoreLink
+    MoreLink,
+    HeaderSearch
   },
   data() {
     return {

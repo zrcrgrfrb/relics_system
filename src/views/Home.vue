@@ -1,6 +1,7 @@
 <template>
   <div class="home">
     <header class="site-header">
+      <HeaderSearch />
       <div class="header-inner container">
         <h1 class="site-title">
           红色文物管理系统
@@ -87,11 +88,13 @@
 
 <script>
 import MoreLink from '@/components/MoreLink.vue'
+import HeaderSearch from '@/components/HeaderSearch.vue'
 
 export default {
   name: 'HomePage',
   components: {
-    MoreLink
+    MoreLink,
+    HeaderSearch
   },
   data() {
     return {

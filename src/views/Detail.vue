@@ -1,6 +1,7 @@
 <template>
   <div class="detail-page">
     <header class="site-header">
+      <HeaderSearch />
       <div class="header-inner container">
         <h1 class="site-title">
           红色文物管理系统
@@ -77,9 +78,13 @@
 
 <script>
 import request from '@/utils/request'
+import HeaderSearch from '@/components/HeaderSearch.vue'
 
 export default {
   name: 'RelicDetail',
+  components: {
+    HeaderSearch
+  },
   data() {
     return {
       navItems: [

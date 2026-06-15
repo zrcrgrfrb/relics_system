@@ -12,6 +12,10 @@ export function getRelicsPage(params) {
   return request.get('/api/relics/page', { params })
 }
 
+export function searchRelics(params) {
+  return request.get('/api/relics/search', { params })
+}
+
 export function getRelicDetail(id) {
   return request.get(`/api/relics/${id}`)
 }

@@ -110,7 +110,7 @@ export default {
         { name: '其它', type: 7 }
       ],
       listData: [],
-      carouselImagesMap: {}
+      carouselImagesMap:{}
     }
   },
   computed: {
@@ -122,6 +122,7 @@ export default {
       return item ? item.name : '文物列表'
     },
     currentCarouselImages() {
+      return this.carouselImagesMap
       return this.carouselImagesMap
     },
     leftColumnData() {
@@ -149,13 +150,14 @@ export default {
             id: item.id,
             title: item.title,
             date: item.publishDate || '2025-10-19'
-          }))
-          this.carouselImagesMap=res.data.map(item=>(
-            {
-              image: item.imageUrl,
-              title:item.title
-            }
-          ))
+          }
+        ))
+        this.carouselImagesMap = res.data.map(item => ({
+          image: item.imageUrl,
+          title: item.title
+        }))
+        console.log(this.listData)
+        console.log("====="+this.carouselImagesMap)
         } else {
           this.listData = this.generateMockData()
         }

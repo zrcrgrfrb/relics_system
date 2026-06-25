@@ -123,7 +123,7 @@ export default {
     },
     currentCarouselImages() {
       return this.carouselImagesMap
-      return this.carouselImagesMap
+      //return this.carouselImagesMap
     },
     leftColumnData() {
       return this.listData.slice(0, Math.ceil(this.listData.length / 2))

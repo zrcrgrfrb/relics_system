@@ -5,7 +5,7 @@
       <div class="header-inner container">
         <h1 class="site-title">
           
-          红色文物管理系统
+          "苏区红"数字文物展览系统
         </h1>
         <p class="site-subtitle">革命文物数字化保护与传承平台</p>
       </div>

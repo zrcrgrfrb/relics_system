@@ -1,6 +1,7 @@
 ﻿<template>
   <div id="app">
     <router-view />
+    <AgentSidebar />
      <footer class="site-footer">
       <div class="footer-accent"></div>
       <div class="footer-inner container">
@@ -8,7 +9,7 @@
           <div class="footer-col footer-brand">
             <div class="footer-logo">
               <div class="logo-mark">红</div>
-              <span class="footer-title">红色文物管理系统</span>
+              <span class="footer-title">"苏区红"数字文物展览系统</span>
             </div>
           </div>
           <div class="footer-col footer-info">
@@ -32,11 +33,13 @@
 
 <script>
 import AdminLoginEntry from '@/components/AdminLoginEntry.vue'
+import AgentSidebar from '@/components/AgentSidebar.vue'
 
 export default {
   name: 'App',
   components: {
-    AdminLoginEntry
+    AdminLoginEntry,
+    AgentSidebar
   }
 }
 </script>

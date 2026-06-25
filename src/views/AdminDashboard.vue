@@ -152,24 +152,99 @@
         <article class="panel records-panel">
           <div class="panel-heading records-heading">
             <div><span>Latest Records</span><h2>数据记录</h2></div>
-            <el-input v-model="keyword" placeholder="搜索标题、地点、年代" prefix-icon="el-icon-search" class="search-input" />
+            <div class="records-tools">
+              <el-button
+                type="danger"
+                icon="el-icon-delete"
+                :disabled="!selectedRows.length"
+                :loading="submitting"
+                @click="deleteSelectedRelics"
+              >
+                批量删除
+              </el-button>
+              <el-input v-model="keyword" placeholder="搜索标题、地点、年代" prefix-icon="el-icon-search" class="search-input" />
+            </div>
           </div>
-          <el-table v-loading="loading" :data="filteredRelics" stripe empty-text="暂无数据">
+          <el-table
+            ref="recordsTable"
+            v-loading="loading"
+            :data="filteredRelics"
+            row-key="id"
+            stripe
+            empty-text="暂无数据"
+            @selection-change="handleSelectionChange"
+          >
+            <el-table-column type="selection" width="48" reserve-selection />
             <el-table-column prop="title" label="标题" min-width="220" />
             <el-table-column label="分类" width="120"><template slot-scope="scope">{{ categoryName(scope.row.categoryId) }}</template></el-table-column>
             <el-table-column prop="period" label="年代" width="150" />
             <el-table-column prop="location" label="收藏地" min-width="180" />
             <el-table-column prop="publishDate" label="发布日期" width="140" />
+            <el-table-column label="操作" width="170" fixed="right">
+              <template slot-scope="scope">
+                <el-button type="text" icon="el-icon-edit" @click="openEditDialog(scope.row)">修改</el-button>
+                <el-button type="text" class="danger-link" icon="el-icon-delete" @click="deleteSingleRelic(scope.row)">删除</el-button>
+              </template>
+            </el-table-column>
           </el-table>
         </article>
       </section>
     </main>
+    <el-dialog
+      title="修改文物数据"
+      :visible.sync="editDialogVisible"
+      width="760px"
+      custom-class="edit-relic-dialog"
+      :close-on-click-modal="false"
+      @closed="resetEditForm"
+    >
+      <el-form :model="editForm" label-position="top" class="relic-form edit-form">
+        <el-row :gutter="18">
+          <el-col :span="12"><el-form-item label="文物标题"><el-input v-model="editForm.title" placeholder="请输入文物标题" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="所属分类"><el-select v-model="editForm.categoryId" placeholder="选择分类" class="full-width"><el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item></el-col>
+        </el-row>
+        <el-row :gutter="18">
+          <el-col :span="12">
+            <el-form-item label="图片">
+              <div class="image-upload-row">
+                <el-upload
+                  action=""
+                  :show-file-list="false"
+                  :http-request="uploadEditImage"
+                  accept="image/jpeg,image/png,image/gif,image/webp,image/bmp"
+                >
+                  <el-button size="small" :loading="editImageUploading">选择图片</el-button>
+                </el-upload>
+              </div>
+              <img v-if="editForm.imageUrl" :src="editForm.imageUrl" class="image-preview" alt="图片预览" />
+              <el-input v-model="editForm.imageUrl" placeholder="或手动输入图片 URL" class="url-fallback" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12"><el-form-item label="发布日期"><el-date-picker v-model="editForm.publishDate" value-format="yyyy-MM-dd" type="date" placeholder="选择日期" class="full-width" /></el-form-item></el-col>
+        </el-row>
+        <el-row :gutter="18">
+          <el-col :span="12"><el-form-item label="年代"><el-input v-model="editForm.period" placeholder="如：土地革命时期" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="收藏地"><el-input v-model="editForm.location" placeholder="馆藏或陈列地点" /></el-form-item></el-col>
+        </el-row>
+        <el-form-item label="文物说明">
+          <quill-editor
+            v-model="editForm.content"
+            :options="quillOptions"
+            class="quill-editor-custom"
+          />
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="editSubmitting" @click="submitEditRelic">保存修改</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import * as echarts from 'echarts'
-import { getCategories, getRelics, createRelic, uploadImage } from '@/api/relics'
+import { getCategories, getRelics, getRelicDetail, createRelic, updateRelic, deleteRelic, batchDeleteRelics, uploadImage } from '@/api/relics'
 import { quillEditor } from 'vue-quill-editor'
 import { clearAdminSession } from '@/utils/auth'
 import 'quill/dist/quill.snow.css'
@@ -186,23 +261,28 @@ export default {
       selectedFile: null,
       uploading: false,
       uploadError: '',
-      apiStatus: '\u68c0\u6d4b\u4e2d',
-      statusText: '\u6b63\u5728\u8fde\u63a5\u540e\u7aef\u670d\u52a1',
+      selectedRows: [],
+      editDialogVisible: false,
+      editSubmitting: false,
+      editImageUploading: false,
+      apiStatus: '检测中',
+      statusText: '正在连接后端服务',
       keyword: '',
       categories: [
-        { id: 1, name: '\u5370\u4fe1\u56fe\u7ae0' },
-        { id: 2, name: '\u65d7\u5e1c\u8bc1\u5fbd' },
-        { id: 3, name: '\u8d27\u5e01\u7968\u8bc1' },
-        { id: 4, name: '\u90ae\u7968\u90ae\u54c1' },
-        { id: 5, name: '\u751f\u6d3b\u5668\u5177' },
-        { id: 6, name: '\u6b66\u88c5\u5668\u68b0' },
-        { id: 7, name: '\u5176\u5b83' }
+        { id: 1, name: '印信图章' },
+        { id: 2, name: '旗帜证徽' },
+        { id: 3, name: '货币票证' },
+        { id: 4, name: '邮票邮品' },
+        { id: 5, name: '生活器具' },
+        { id: 6, name: '武装器械' },
+        { id: 7, name: '其它' }
       ],
       relics: [],
       form: this.emptyForm(),
+      editForm: this.emptyForm(),
       quillOptions: {
         theme: 'snow',
-        placeholder: '\u8bf7\u8f93\u5165\u6587\u7269\u4ecb\u7ecd\u4e0e\u53f2\u6599\u8bf4\u660e',
+        placeholder: '请输入文物介绍与史料说明',
         modules: {
           toolbar: [
             ['bold', 'italic', 'underline', 'strike'],
@@ -220,9 +300,9 @@ export default {
   computed: {
     panelTitle() {
       const titles = {
-        overview: '\u7ea2\u8272\u6587\u7269\u8fd0\u884c\u76d1\u89c6\u4e2d\u5fc3',
-        upload: '\u6587\u7269\u6570\u636e\u4e0a\u4f20\u4e0e\u7f16\u8f91',
-        records: '\u6587\u7269\u6570\u636e\u5217\u8868'
+        overview: '红色文物运行监视中心',
+        upload: '文物数据上传与编辑',
+        records: '文物数据列表'
       }
       return titles[this.currentPanel]
     },
@@ -234,7 +314,7 @@ export default {
     },
     latestDate() {
       const dates = this.relics.map(item => item.publishDate).filter(Boolean).sort().reverse()
-      return dates[0] || '\u6682\u65e0'
+      return dates[0] || '暂无'
     },
     filteredRelics() {
       const keyword = this.keyword.trim().toLowerCase()
@@ -246,20 +326,20 @@ export default {
     },
     monthSeries() {
       const stat = this.relics.reduce((result, item) => {
-        const month = (item.publishDate || '\u672a\u8bbe\u7f6e').slice(0, 7) || '\u672a\u8bbe\u7f6e'
+        const month = (item.publishDate || '未设置').slice(0, 7) || '未设置'
         result[month] = (result[month] || 0) + 1
         return result
       }, {})
       return Object.keys(stat).sort().map(name => ({ name, value: stat[name] }))
     },
     periodSeries() {
-      return this.topSeries('period', '\u672a\u8bbe\u7f6e\u5e74\u4ee3', 8)
+      return this.topSeries('period', '未设置年代', 8)
     },
     locationSeries() {
-      return this.topSeries('location', '\u672a\u8bbe\u7f6e\u5730\u70b9', 8)
+      return this.topSeries('location', '未设置地点', 8)
     },
     submitText() {
-      return this.submitting ? '\u6b63\u5728\u63d0\u4ea4...' : '\u63d0\u4ea4\u5165\u5e93'
+      return this.submitting ? '正在提交...' : '提交入库'
     }
   },
   mounted() {
@@ -317,7 +397,7 @@ export default {
         tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
         legend: { bottom: 0, textStyle: { fontSize: 11 } },
         series: [{
-          name: '\u6587\u7269\u6570\u91cf',
+          name: '文物数量',
           type: 'pie',
           radius: ['42%', '68%'],
           center: ['50%', '43%'],
@@ -360,7 +440,7 @@ export default {
       if (!chart) return
       chart.setOption({
         color: ['#2C1810'],
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}: {c} \u4ef6' },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}: {c} 件' },
         grid: { left: 88, right: 20, top: 22, bottom: 26 },
         xAxis: { type: 'value', minInterval: 1 },
         yAxis: {
@@ -387,7 +467,7 @@ export default {
         const res = await getCategories()
         if (res.success && Array.isArray(res.data) && res.data.length) this.categories = res.data.map(item => ({ id: item.id, name: item.name }))
       } catch (error) {
-        this.$message.warning('\u5206\u7c7b\u63a5\u53e3\u6682\u4e0d\u53ef\u7528\uff0c\u5df2\u4f7f\u7528\u9ed8\u8ba4\u5206\u7c7b')
+        this.$message.warning('分类接口暂不可用，已使用默认分类')
       }
     },
     async fetchRelics() {
@@ -396,40 +476,145 @@ export default {
         const res = await getRelics()
         if (res.success) {
           this.relics = (res.data || []).map(this.normalizeRelic)
-          this.apiStatus = '\u5728\u7ebf'
-          this.statusText = '\u540e\u7aef\u63a5\u53e3\u8fde\u63a5\u6b63\u5e38'
+          this.apiStatus = '在线'
+          this.statusText = '后端接口连接正常'
           this.$nextTick(this.renderCharts)
         }
       } catch (error) {
-        this.apiStatus = '\u79bb\u7ebf'
-        this.statusText = '\u8bf7\u786e\u8ba4 relics_serve \u5df2\u542f\u52a8'
-        this.$message.error('\u83b7\u53d6\u6587\u7269\u6570\u636e\u5931\u8d25')
+        this.apiStatus = '离线'
+        this.statusText = '请确认 relics_serve 已启动'
+        this.$message.error('获取文物数据失败')
       } finally {
         this.loading = false
       }
     },
     normalizeRelic(item) {
-      return { id: item.id, title: item.title, categoryId: item.categoryId || item.type || 1, content: item.content, imageUrl: item.imageUrl || item.image, period: item.period, location: item.location, publishDate: item.publishDate || item.date }
+      return { id: item.id, title: item.title || '', categoryId: item.categoryId || item.type || 1, content: item.content || '', imageUrl: item.imageUrl || item.image || '', period: item.period || '', location: item.location || '', publishDate: item.publishDate || item.date || '' }
+    },
+    formPayload(source) {
+      return {
+        title: (source.title || '').trim(),
+        categoryId: Number(source.categoryId || 1),
+        content: source.content || '',
+        imageUrl: source.imageUrl || '',
+        period: source.period || '',
+        location: source.location || '',
+        publishDate: source.publishDate || ''
+      }
     },
     categoryName(id) {
       const category = this.categories.find(item => item.id === id)
-      return category ? category.name : '\u672a\u5206\u7c7b'
+      return category ? category.name : '未分类'
     },
     async submitRelic() {
       if (!this.form.title.trim()) {
-        this.$message.warning('\u8bf7\u5148\u586b\u5199\u6587\u7269\u6807\u9898')
+        this.$message.warning('请先填写文物标题')
         return
       }
       this.submitting = true
       try {
         const res = await createRelic(this.form)
         if (res.success) {
-          this.$message.success('\u6570\u636e\u5df2\u63d0\u4ea4\u5165\u5e93')
+          this.$message.success('数据已提交入库')
           this.resetForm()
           this.fetchRelics()
         }
       } catch (error) {
-        this.$message.error('\u63d0\u4ea4\u5931\u8d25\uff0c\u8bf7\u68c0\u67e5\u540e\u7aef\u670d\u52a1')
+        this.$message.error('提交失败，请检查后端服务')
+      } finally {
+        this.submitting = false
+      }
+    },
+    handleSelectionChange(rows) {
+      this.selectedRows = rows
+    },
+    async openEditDialog(row) {
+      let relic = row
+      if (row.content === undefined || row.imageUrl === undefined) {
+        try {
+          const res = await getRelicDetail(row.id)
+          if (res.success) relic = res.data
+        } catch (error) {
+          this.$message.warning('未能读取完整详情，已使用列表数据')
+        }
+      }
+      this.editForm = this.normalizeRelic(relic)
+      this.editDialogVisible = true
+    },
+    async submitEditRelic() {
+      if (!this.editForm.id) return
+      if (!this.editForm.title.trim()) {
+        this.$message.warning('请先填写文物标题')
+        return
+      }
+      this.editSubmitting = true
+      try {
+        const res = await updateRelic(this.editForm.id, this.formPayload(this.editForm))
+        if (res.success) {
+          this.$message.success('数据已修改')
+          this.editDialogVisible = false
+          await this.fetchRelics()
+        }
+      } catch (error) {
+        this.$message.error('修改失败，请检查后端服务')
+      } finally {
+        this.editSubmitting = false
+      }
+    },
+    async uploadEditImage(option) {
+      this.editImageUploading = true
+      try {
+        const res = await uploadImage(option.file)
+        if (res.success) {
+          this.editForm.imageUrl = res.data
+          this.$message.success('图片已上传')
+        } else {
+          this.$message.error(res.message || '上传失败')
+        }
+      } catch (error) {
+        this.$message.error('图片上传失败')
+      } finally {
+        this.editImageUploading = false
+      }
+    },
+    async deleteSingleRelic(row) {
+      try {
+        await this.$confirm(`确定删除“${row.title}”吗？`, '删除确认', {
+          confirmButtonText: '删除',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        this.submitting = true
+        const res = await deleteRelic(row.id)
+        if (res.success) {
+          this.$message.success('数据已删除')
+          await this.fetchRelics()
+        }
+      } catch (error) {
+        if (error !== 'cancel' && error !== 'close') this.$message.error('删除失败')
+      } finally {
+        this.submitting = false
+      }
+    },
+    async deleteSelectedRelics() {
+      const ids = this.selectedRows.map(item => item.id)
+      if (!ids.length) return
+      try {
+        await this.$confirm(`确定删除已选的 ${ids.length} 条数据吗？`, '批量删除确认', {
+          confirmButtonText: '批量删除',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        this.submitting = true
+        const res = await batchDeleteRelics(ids)
+        if (res.success) {
+          this.$message.success('已批量删除')
+          this.selectedRows = []
+          if (this.$refs.recordsTable) this.$refs.recordsTable.clearSelection()
+          await this.fetchRelics()
+        }
+      } catch (error) {
+        if (error !== 'cancel' && error !== 'close') this.$message.error('批量删除失败')
       } finally {
         this.submitting = false
       }
@@ -441,7 +626,7 @@ export default {
           const records = this.parseUploadContent(file.name, event.target.result)
           await this.uploadRecords(records)
         } catch (error) {
-          this.$message.error(error.message || '\u6587\u4ef6\u89e3\u6790\u5931\u8d25')
+          this.$message.error(error.message || '文件解析失败')
         }
       }
       reader.readAsText(file, 'utf-8')
@@ -460,17 +645,17 @@ export default {
           return headers.reduce((record, header, index) => { record[header] = values[index]; return record }, {})
         })
       }
-      throw new Error('\u4ec5\u652f\u6301 JSON \u6216 CSV \u6587\u4ef6')
+      throw new Error('仅支持 JSON 或 CSV 文件')
     },
     async uploadRecords(records) {
       if (!records.length) {
-        this.$message.warning('\u6587\u4ef6\u4e2d\u6ca1\u6709\u53ef\u4e0a\u4f20\u7684\u6570\u636e')
+        this.$message.warning('文件中没有可上传的数据')
         return
       }
       this.submitting = true
       try {
         for (const record of records) await createRelic({ title: record.title, categoryId: Number(record.categoryId || record.type || 1), content: record.content || '', imageUrl: record.imageUrl || record.image || '', period: record.period || '', location: record.location || '', publishDate: record.publishDate || record.date || '' })
-        this.$message.success('\u6210\u529f\u4e0a\u4f20 ' + records.length + ' \u6761\u6570\u636e')
+        this.$message.success('成功上传 ' + records.length + ' 条数据')
         this.fetchRelics()
       } finally {
         this.submitting = false
@@ -495,13 +680,18 @@ export default {
           this.uploadError = res.message || '上传失败'
         }
       } catch (err) {
-        this.uploadError = err.message || '\u7f51\u7edc\u9519\u8bef\uff0c\u8bf7\u91cd\u8bd5'
+        this.uploadError = err.message || '网络错误，请重试'
       } finally {
         this.uploading = false
       }
     },
     resetForm() {
       this.form = this.emptyForm()
+    },
+    resetEditForm() {
+      this.editForm = this.emptyForm()
+      this.editSubmitting = false
+      this.editImageUploading = false
     },
     logout() {
       clearAdminSession()
@@ -563,10 +753,15 @@ export default {
 .submit-button { width: 100%; height: 46px; border: 0; background: var(--color-primary); color: #fff7e8; font-family: var(--font-heading); letter-spacing: 3px; cursor: pointer; }
 .submit-button:disabled { opacity: 0.64; cursor: not-allowed; }
 .records-panel .records-heading { align-items: center; }
+.records-tools { display: flex; align-items: center; gap: 12px; }
 .search-input { max-width: 320px; }
+.danger-link { color: #a11818; }
+.danger-link:hover { color: #c23a3a; }
+.edit-relic-dialog .el-dialog__body { padding-top: 8px; }
+.edit-form { max-height: 62vh; overflow-y: auto; padding-right: 4px; }
 .quill-editor-custom .ql-editor { min-height: 180px; font-size: 15px; line-height: 1.8; }
 .quill-editor-custom .ql-toolbar { border-color: var(--color-border); }
 .quill-editor-custom .ql-container { border-color: var(--color-border); }
 @media (max-width: 1180px) { .admin-dashboard { grid-template-columns: 1fr; } .admin-sidebar { position: static; height: auto; } .metric-grid, .chart-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 760px) { .admin-main { padding: 22px; } .admin-topbar, .panel-heading, .topbar-actions { flex-direction: column; } .metric-grid, .chart-grid { grid-template-columns: 1fr; } .panel.large { grid-column: span 1; } }
+@media (max-width: 760px) { .admin-main { padding: 22px; } .admin-topbar, .panel-heading, .topbar-actions, .records-tools { flex-direction: column; align-items: stretch; } .metric-grid, .chart-grid { grid-template-columns: 1fr; } .panel.large { grid-column: span 1; } }
 </style>

@@ -14,9 +14,9 @@
           </div>
           <div class="footer-col footer-info">
             <p>&copy; 版权所有 2024 "鸿源"数字思政创新研究中心</p>
-            <p>邮编：341000 联系电话：0797-8393666</p>
-            <p>赣ICP备XXXXXXX</p>
-            <p>地址：江西省赣州市章贡区师大南路赣南师范大学人文科技中心二楼江西数字思政创新研究中心</p>
+            <p>邮编：341000 联系电话：0797-8393636</p>
+            <p>赣ICP备2022008114号-1</p>
+            <p>地址：江西省赣州市章贡区师大南路赣南师范大学人文科技中心二楼鸿源数字思政创新研究中心</p>
           </div>
           <div class="footer-col footer-links">
             <router-link to="/about" class="footer-link">关于我们</router-link>
